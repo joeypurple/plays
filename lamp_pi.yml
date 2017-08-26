@@ -1,0 +1,71 @@
+---
+- name: "Install LAMP Stack"
+  hosts: web
+  become: true
+  become_user: root
+  tasks:
+   - name: "Install apache mariadb php"
+     yum:
+       name: httpd,php,php-mysql,php-gd,mod_ssl,mariadb-server,MySQL-python,rsync
+       state: latest
+
+   - name: "Creating dir wp-content/uploads"
+     file:
+       path: /var/www/html/wp-content/uploads
+       state: directory     
+   - name: "Download and unpack wordpress"
+     unarchive:
+       owner: wpadmin
+       group: wpadmin
+       src: http://wordpress.org/latest.tar.gz
+       dest: /home/wpadmin
+       remote_src: yes
+
+   - name: "Copy over wp-config.php"
+     copy:
+       src: /home/admin/wp-config.php
+       dest: /var/www/html/
+
+   - name: "Change permissions on /var/www/html"
+     file:
+       path: /var/www/html/
+       recurse: yes
+       state: directory
+       owner: apache
+       group: apache
+    
+
+   - name: "Install epel"
+     copy:
+       src: /home/admin/epel.repo
+       dest: /etc/yum.repos.d/
+  
+   - name: "Update server"
+     yum:
+       name: '*'
+       state: latest
+
+   - name: "Turn on httpd"
+     service:
+       name: httpd
+       state: started
+       enabled: yes
+
+   - name: "Open web ports"
+     firewalld:
+       port: 80/tcp
+       zone: public
+       state: enabled
+       permanent: true
+
+   - firewalld:
+      port: 443/tcp
+      zone: public
+      state: enabled
+      permanent: true 
+   
+   - name: "Turn on mariadb"
+     service:
+       name: mariadb
+       state: started
+       enabled: yes
