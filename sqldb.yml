@@ -1,0 +1,40 @@
+---
+- name: "Setup db for mariadb wordpress"
+  hosts: tag_Name_wordpress
+  tasks:
+  - name: "Change root password"
+    mysql_user:
+      login_user: root
+      login_password: ***********
+      user: root
+      password: **************
+      update_password: always
+      state: present
+
+  - name: "Add wordpress user"
+    mysql_user:
+      login_user: root
+      login_password: *************
+      user: wordpress
+      password: *************
+      update_password: always
+      append_privs: yes
+      priv: wordpress.*:ALL
+      state: present
+
+  - name: "Remove test database"
+    mysql_db:
+      name: test
+      state: absent
+
+  - name: "Add wordpress database"
+    mysql_db:
+      login_user: root
+      login_password: ***************
+      name: wordpress
+      state: present
+
+  - name: "Copy wp-config.php"
+    file:
+      src: /home/admin/wp-config.php
+      dest: /var/www/html/
