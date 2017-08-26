@@ -1,0 +1,47 @@
+---
+- name: "Setup New admin"
+  hosts: tag_Name_wordpress
+  become: true
+  become_user: root
+  vars:
+   sudofile: ~/sudoers
+   username: test
+   owner: test
+   group: test
+   
+  tasks:
+    - name: add group
+      group:
+        name: "{{ group }}"
+        state: present
+
+    - name: Add new admin
+      user: name={{ item.name }} state=present groups={{ item.groups }} password=$6$Qu55.DDJQF9RrGnm$CMJDx45AReesgFUmZVwTFnBFcvZ9L2dmcWoxVSqIOODij1tGOpY57DNehA7tmV8YK3qfEOOoW1jPbZyRNBy6K0
+      with_items:
+        - { name: "{{ username }}", groups: "{{ group }}" }
+   
+    - name: Copy sudoers file
+      copy: 
+        src={{ sudofile }} 
+        dest=/etc/sudoers
+
+    - name: Create .ssh folder for new user
+      file:
+        path: /home/{{ item.name }}/.ssh/
+        owner: "{{ owner }}"
+        group: "{{ group }}"
+        mode: 0700
+        state: directory
+      with_items:
+        - { name: "{{ username }}" }
+
+    - name: Copy authorized key from ec2 user
+      copy:
+        src: /home/ec2-user/.ssh/authorized_keys
+        dest: /home/{{ item.name }}/.ssh/authorized_keys
+        remote_src: yes
+        owner: "{{ owner }}"
+        group: "{{ group }}"
+        mode: 0600
+      with_items:
+        - { name: "{{ username }}" } 
